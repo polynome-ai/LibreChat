@@ -51,3 +51,6 @@ export { memoryDiagnostics } from './utils/memory';
 export type * from './mcp/types';
 export type * from './flow/types';
 export type * from './types';
+/* Bridge (LiveKit integration) */
+export * from './bridge';
+export * from './livekit';

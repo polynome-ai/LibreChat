@@ -29,6 +29,7 @@ import AudioRecorder from './AudioRecorder';
 import CollapseChat from './CollapseChat';
 import StreamAudio from './StreamAudio';
 import StopButton from './StopButton';
+import VoiceBridgeButton from './VoiceBridgeButton';
 import SendButton from './SendButton';
 import EditBadges from './EditBadges';
 import BadgeRow from './BadgeRow';
@@ -339,7 +340,12 @@ const ChatForm = memo(({ index = 0 }: { index?: number }) => {
                   isSubmitting={isSubmitting}
                 />
               )}
-              <div className={`${isRTL ? 'ml-2' : 'mr-2'}`}>
+              <div className={`flex items-center gap-1 ${isRTL ? 'ml-2' : 'mr-2'}`}>
+                <VoiceBridgeButton
+                  conversationId={conversationId}
+                  disabled={disableInputs}
+                  setTextValue={(text) => methods.setValue('text', text)}
+                />
                 {isSubmitting && showStopButton ? (
                   <StopButton stop={handleStopGenerating} setShowStopButton={setShowStopButton} />
                 ) : (
