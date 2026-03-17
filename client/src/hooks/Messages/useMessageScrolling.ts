@@ -15,6 +15,7 @@ export default function useMessageScrolling(messagesTree?: TMessage[] | null) {
   const scrollableRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const isNearBottomRef = useRef(true);
   const { conversation, conversationId } = useMessagesConversation();
   const { setAbortScroll, isSubmitting, abortScroll } = useMessagesSubmission();
 
@@ -24,6 +25,7 @@ export default function useMessageScrolling(messagesTree?: TMessage[] | null) {
     clearTimeout(timeoutIdRef.current);
     timeoutIdRef.current = setTimeout(() => {
       setShowScrollButton(value);
+      isNearBottomRef.current = !value;
     }, debounceRate);
   }, []);
 
@@ -60,7 +62,10 @@ export default function useMessageScrolling(messagesTree?: TMessage[] | null) {
     }
   }, [debouncedSetShowScrollButton]);
 
-  const scrollCallback = () => debouncedSetShowScrollButton(false);
+  const scrollCallback = () => {
+    debouncedSetShowScrollButton(false);
+    isNearBottomRef.current = true;
+  };
 
   const { scrollToRef: scrollToBottom, handleSmoothToRef } = useScrollToRef({
     targetRef: messagesEndRef,
@@ -100,6 +105,16 @@ export default function useMessageScrolling(messagesTree?: TMessage[] | null) {
       scrollToBottom();
     }
   }, [autoScroll, conversationId, scrollToBottom]);
+
+  // Scroll on any tree change outside of a submission (e.g. voice streaming) if already near bottom
+  useEffect(() => {
+    if (!messagesTree || messagesTree.length === 0 || isSubmitting) {
+      return;
+    }
+    if (isNearBottomRef.current && scrollToBottom) {
+      scrollToBottom();
+    }
+  }, [messagesTree, isSubmitting, scrollToBottom]);
 
   return {
     conversation,
