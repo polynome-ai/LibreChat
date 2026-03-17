@@ -1,10 +1,10 @@
 const express = require('express');
 const { logger } = require('@librechat/data-schemas');
 const { verifyWebhookSignature, TranscriptPipeline, sessionManager } = require('@librechat/api');
-const { saveMessage, getConvo } = require('~/models');
+const { saveMessage, getConvo, getMessages } = require('~/models');
 
 const router = express.Router();
-const transcriptPipeline = new TranscriptPipeline(saveMessage);
+const transcriptPipeline = new TranscriptPipeline(saveMessage, getMessages);
 
 /**
  * @route POST /api/bridge/webhook/livekit

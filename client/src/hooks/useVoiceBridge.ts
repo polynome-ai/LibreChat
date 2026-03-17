@@ -9,6 +9,8 @@ interface UseVoiceBridgeOptions {
   onTranscript?: (text: string, isAgent: boolean, messageId: string, sender: string) => void;
   onInterimTranscript?: (text: string) => void;
   onUserSpeech?: (text: string) => void;
+  onAgentStreaming?: (tempId: string, text: string) => void;
+  onAgentStreamingDone?: (tempId: string) => void;
 }
 
 interface VoiceSession {
@@ -89,6 +91,8 @@ export function useVoiceBridge({
   onTranscript,
   onInterimTranscript,
   onUserSpeech,
+  onAgentStreaming,
+  onAgentStreamingDone,
 }: UseVoiceBridgeOptions) {
   const [status, setStatus] = useState<VoiceBridgeStatus>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +100,10 @@ export function useVoiceBridge({
   const roomRef = useRef<Room | null>(null);
   const sseRef = useRef<EventSource | null>(null);
   const srRef = useRef<ISpeechRecognition | null>(null);
+
+  // Tracks the current agent streaming message: tempId + accumulated text per segment id
+  const streamingTempIdRef = useRef<string | null>(null);
+  const agentSegmentsRef = useRef<Map<string, string>>(new Map());
 
   const stopSpeechRecognition = useCallback(() => {
     if (srRef.current) {
@@ -131,6 +139,36 @@ export function useVoiceBridge({
           audioEl.autoplay = true;
           document.body.appendChild(audioEl);
           track.on('ended', () => audioEl.remove());
+        }
+      });
+
+      // Real-time agent TTS transcription streaming
+      room.on(RoomEvent.TranscriptionReceived, (segments, participant) => {
+        if (!onAgentStreaming && !onAgentStreamingDone) return;
+        // Only handle remote (agent) participant transcriptions
+        if (!participant || participant.isLocal) return;
+
+        let hasFinal = false;
+        for (const segment of segments) {
+          agentSegmentsRef.current.set(segment.id, segment.text);
+          if (segment.final) hasFinal = true;
+        }
+
+        if (!streamingTempIdRef.current) {
+          streamingTempIdRef.current = `voice-streaming-${Date.now()}`;
+        }
+
+        const accumulated = [...agentSegmentsRef.current.values()].join('');
+        if (accumulated) {
+          onAgentStreaming?.(streamingTempIdRef.current, accumulated);
+        }
+
+        if (hasFinal) {
+          // Signal that the streaming segment is done; SSE on_transcript_final will replace it
+          const doneId = streamingTempIdRef.current;
+          streamingTempIdRef.current = null;
+          agentSegmentsRef.current.clear();
+          if (doneId) onAgentStreamingDone?.(doneId);
         }
       });
 
@@ -209,7 +247,7 @@ export function useVoiceBridge({
       setError(message);
       setStatus('idle');
     }
-  }, [conversationId, status, onTranscript, onInterimTranscript, onUserSpeech, stopSpeechRecognition]);
+  }, [conversationId, status, onTranscript, onInterimTranscript, onUserSpeech, onAgentStreaming, onAgentStreamingDone, stopSpeechRecognition]);
 
   const disconnect = useCallback(async () => {
     if (!conversationId || status === 'idle' || status === 'error' || status === 'disconnecting') return;
