@@ -1,5 +1,6 @@
 const express = require('express');
 const { logger } = require('@librechat/data-schemas');
+const { getResponseSender } = require('librechat-data-provider');
 const { verifyWebhookSignature, TranscriptPipeline, sessionManager } = require('@librechat/api');
 const { saveMessage, getConvo, getMessages } = require('~/models');
 
@@ -44,7 +45,14 @@ router.post(
           let agentSender;
           if (isAgent && transcript.isFinal) {
             const convo = await getConvo(session.userId, conversationId).catch(() => null);
-            agentSender = convo?.modelLabel || convo?.chatGptLabel || convo?.model || undefined;
+            agentSender = getResponseSender({
+              model: convo?.model,
+              endpoint: convo?.endpoint,
+              endpointType: convo?.endpointType,
+              modelLabel: convo?.modelLabel,
+              chatGptLabel: convo?.chatGptLabel,
+              modelDisplayLabel: convo?.modelDisplayLabel,
+            }) || undefined;
           }
           await transcriptPipeline.processFragment(session, {
             roomName,
