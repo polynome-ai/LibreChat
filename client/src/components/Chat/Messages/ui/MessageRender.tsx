@@ -66,24 +66,40 @@ const MessageRender = memo(function MessageRender({
   /** Only pass isSubmitting to the latest message to prevent unnecessary re-renders */
   const effectiveIsSubmitting = isLatestMessage ? isSubmitting : false;
 
-  const iconData: TMessageIcon = useMemo(
-    () => ({
-      endpoint: msg?.endpoint ?? conversation?.endpoint,
-      model: msg?.model ?? conversation?.model,
-      iconURL: msg?.iconURL,
-      modelLabel: messageLabel,
-      isCreatedByUser: msg?.isCreatedByUser,
-    }),
-    [
-      messageLabel,
-      conversation?.endpoint,
-      conversation?.model,
-      msg?.model,
-      msg?.iconURL,
-      msg?.endpoint,
-      msg?.isCreatedByUser,
-    ],
-  );
+  const iconData: TMessageIcon = useMemo(() => {
+  const isUser = msg?.isCreatedByUser === true;
+
+  const normalizedEndpoint = (() => {
+    if (isUser) return 'user';
+
+    // transport endpoint не должен ломать выбор иконки
+    if (msg?.endpoint && msg.endpoint !== 'voice-bridge') {
+      return msg.endpoint;
+    }
+
+    if (conversation?.endpoint) {
+      return conversation.endpoint;
+    }
+
+    return 'openAI';
+  })();
+
+  return {
+    endpoint: normalizedEndpoint,
+    model: msg?.model ?? conversation?.model,
+    iconURL: msg?.iconURL,
+    modelLabel: messageLabel,
+    isCreatedByUser: isUser,
+  };
+}, [
+  messageLabel,
+  conversation?.endpoint,
+  conversation?.model,
+  msg?.model,
+  msg?.iconURL,
+  msg?.endpoint,
+  msg?.isCreatedByUser,
+]);
 
   const { hasParallelContent } = useContentMetadata(msg);
   const messageId = msg?.messageId ?? '';
@@ -132,13 +148,11 @@ const MessageRender = memo(function MessageRender({
         'message-render',
       )}
     >
-      {!hasParallelContent && (
-        <div className="relative flex flex-shrink-0 flex-col items-center">
-          <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
-            <MessageIcon iconData={iconData} assistant={assistant} agent={agent} />
-          </div>
+      <div className="relative flex flex-shrink-0 flex-col items-center">
+        <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
+          <MessageIcon iconData={iconData} assistant={assistant} agent={agent} />
         </div>
-      )}
+      </div>
 
       <div
         className={cn(
@@ -147,9 +161,7 @@ const MessageRender = memo(function MessageRender({
           msg.isCreatedByUser ? 'user-turn' : 'agent-turn',
         )}
       >
-        {!hasParallelContent && (
-          <h2 className={cn('select-none font-semibold', fontSize)}>{messageLabel}</h2>
-        )}
+        <h2 className={cn('select-none font-semibold', fontSize)}>{messageLabel}</h2>
 
         <div className="flex flex-col gap-1">
           <div className="flex min-h-[20px] max-w-full flex-grow flex-col gap-0">
