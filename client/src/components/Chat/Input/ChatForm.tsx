@@ -342,9 +342,7 @@ const ChatForm = memo(({ index = 0 }: { index?: number }) => {
               )}
               <div className={`flex items-center gap-1 ${isRTL ? 'ml-2' : 'mr-2'}`}>
                 <VoiceBridgeButton
-                  conversationId={conversationId}
                   disabled={disableInputs}
-                  setTextValue={(text) => methods.setValue('text', text)}
                 />
                 {isSubmitting && showStopButton ? (
                   <StopButton stop={handleStopGenerating} setShowStopButton={setShowStopButton} />
