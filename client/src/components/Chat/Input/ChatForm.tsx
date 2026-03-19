@@ -73,6 +73,7 @@ const ChatForm = memo(({ index = 0 }: { index?: number }) => {
     isSubmitting,
     filesLoading,
     newConversation,
+    stopGenerating,
     handleStopGenerating,
   } = useChatContext();
   const {
@@ -343,6 +344,7 @@ const ChatForm = memo(({ index = 0 }: { index?: number }) => {
               <div className={`flex items-center gap-1 ${isRTL ? 'ml-2' : 'mr-2'}`}>
                 <VoiceBridgeButton
                   disabled={disableInputs}
+                  stopGeneration={stopGenerating}
                 />
                 {isSubmitting && showStopButton ? (
                   <StopButton stop={handleStopGenerating} setShowStopButton={setShowStopButton} />

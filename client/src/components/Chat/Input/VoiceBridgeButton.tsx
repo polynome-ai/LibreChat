@@ -12,6 +12,7 @@ import store from '~/store';
 
 interface VoiceBridgeButtonProps {
   disabled?: boolean;
+  stopGeneration?: () => void | Promise<void>;
 }
 
 const isRealConversationId = (id: string | null): id is string =>
@@ -24,6 +25,7 @@ const FILLER_CLEANUP_DELAY_MS = 3000;
 
 export default function VoiceBridgeButton({
   disabled,
+  stopGeneration,
 }: VoiceBridgeButtonProps) {
   const localize = useLocalize();
   const { showToast } = useToastContext();
@@ -189,6 +191,7 @@ export default function VoiceBridgeButton({
 
   const handleClick = async () => {
     if (isConnected) {
+      stopGeneration?.();
       await disconnect();
     } else {
       await connect();
